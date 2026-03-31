@@ -7,6 +7,7 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable"
 import { FileTree } from "@/components/workspace/file-tree"
+import { SidebarHeader } from "@/components/workspace/sidebar-header"
 import { TerminalView } from "@/components/terminal"
 import { DevcastProvider } from "@/components/workspace/devcast-provider"
 
@@ -42,7 +43,8 @@ export function WorkspaceLayout() {
         className="w-full min-h-dvh bg-border"
       >
         <ResizablePanel defaultSize="20%" minSize="10%" maxSize="40%">
-          <div className="flex h-full flex-col overflow-auto bg-card">
+          <div className="flex h-full flex-col bg-card">
+            <SidebarHeader />
             <FileTree />
           </div>
         </ResizablePanel>
