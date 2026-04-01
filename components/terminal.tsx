@@ -154,7 +154,7 @@ export function TerminalView() {
     <div
       ref={containerRef}
       className="h-full w-full"
-      style={{ padding: "4px" }}
+      style={{ padding: 0 }}
     />
   )
 }

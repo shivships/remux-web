@@ -6,9 +6,11 @@ import { Search, Plus, ChevronsUpDown, Folder } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
 import { useDevcast } from "@/components/workspace/devcast-provider"
+import { useEditor } from "@/components/workspace/editor-area"
 
 export function SidebarHeader() {
   const connection = useDevcast()
+  const editor = useEditor()
   const [workspacePath, setWorkspacePath] = useState<string | null>(null)
 
   const isConnected = connection.status === "connected"
@@ -40,7 +42,7 @@ export function SidebarHeader() {
         <Button variant="outline" size="icon" aria-label="Search">
           <Search />
         </Button>
-        <Button variant="outline" size="icon" aria-label="New">
+        <Button variant="outline" size="icon" aria-label="New tab" onClick={() => editor?.addTab()}>
           <Plus />
         </Button>
       </ButtonGroup>
