@@ -12,7 +12,12 @@ import { useDevcast } from "@/components/devcast-provider"
 import { setupTouchScroll } from "@/lib/touch-scroll"
 
 const FONT_FAMILY = "'Geist Mono', 'Menlo', 'Courier New', monospace"
-const FONT_SIZE = 14
+
+function getFontSize() {
+  if (window.matchMedia("(max-width: 640px)").matches) return 11
+  if (window.matchMedia("(max-width: 1024px)").matches) return 13
+  return 14
+}
 
 // Flow control constants
 const FLOW_LIMIT = 100000
@@ -32,15 +37,16 @@ export function TerminalView() {
     const container = containerRef.current
 
     async function init() {
-      await document.fonts.load(`${FONT_SIZE}px ${FONT_FAMILY}`)
-      await document.fonts.load(`bold ${FONT_SIZE}px ${FONT_FAMILY}`)
+      const fontSize = getFontSize()
+      await document.fonts.load(`${fontSize}px ${FONT_FAMILY}`)
+      await document.fonts.load(`bold ${fontSize}px ${FONT_FAMILY}`)
 
       if (disposed) return
 
       const term = new Terminal({
         cursorBlink: true,
         fontFamily: FONT_FAMILY,
-        fontSize: FONT_SIZE,
+        fontSize,
         customGlyphs: true,
         rescaleOverlappingGlyphs: true,
         allowProposedApi: true,

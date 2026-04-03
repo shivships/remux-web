@@ -1,7 +1,7 @@
 import type { Terminal } from "@xterm/xterm"
 
-const MOMENTUM_DECAY = 0.998
-const MOMENTUM_STOP_VELOCITY = 30
+const MOMENTUM_DECAY = 0.994
+const MOMENTUM_STOP_VELOCITY = 100
 const MOMENTUM_START_VELOCITY = 50
 const TAP_MAX_DURATION = 300
 const TAP_MAX_DISTANCE = 10
