@@ -69,6 +69,23 @@ export function TerminalView() {
 
       term.open(container)
 
+      // On mobile, fully disable xterm's textarea so the keyboard
+      // is controlled exclusively by our toolbar's hidden input.
+      const isMobile = window.matchMedia("(max-width: 768px)").matches
+      if (isMobile) {
+        const textarea = container.querySelector(
+          ".xterm-helper-textarea",
+        ) as HTMLTextAreaElement | null
+        if (textarea) {
+          textarea.setAttribute("inputmode", "none")
+          textarea.setAttribute("readonly", "true")
+          textarea.style.opacity = "0"
+          textarea.style.pointerEvents = "none"
+          textarea.style.position = "fixed"
+          textarea.style.top = "-9999px"
+        }
+      }
+
       try {
         const webgl = new WebglAddon()
         webgl.onContextLoss(() => webgl.dispose())

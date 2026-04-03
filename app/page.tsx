@@ -4,6 +4,7 @@ import { Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { DevcastProvider } from "@/components/devcast-provider"
 import { TerminalView } from "@/components/terminal"
+import { ToolbarMobile } from "@/components/toolbar-mobile"
 
 function TerminalPage() {
   const searchParams = useSearchParams()
@@ -27,7 +28,12 @@ function TerminalPage() {
 
   return (
     <DevcastProvider wsUrl={wsUrl}>
-      <TerminalView />
+      <div className="flex h-full flex-col">
+        <div className="min-h-0 flex-1">
+          <TerminalView />
+        </div>
+        <ToolbarMobile />
+      </div>
     </DevcastProvider>
   )
 }
