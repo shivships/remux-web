@@ -8,7 +8,8 @@ import { Unicode11Addon } from "@xterm/addon-unicode11"
 import { WebLinksAddon } from "@xterm/addon-web-links"
 import "@xterm/xterm/css/xterm.css"
 
-import { useDevcast } from "@/components/workspace/devcast-provider"
+import { useDevcast } from "@/components/devcast-provider"
+import { setupTouchScroll } from "@/lib/touch-scroll"
 
 const FONT_FAMILY = "'Geist Mono', 'Menlo', 'Courier New', monospace"
 const FONT_SIZE = 14
@@ -75,6 +76,13 @@ export function TerminalView() {
       // Send initial resize so backend spawns PTY at correct dimensions
       connection.sendTerminalResize(term.cols, term.rows)
 
+      // Touch scroll handling
+      const cleanupTouch = setupTouchScroll(
+        container,
+        term,
+        connection.sendTerminalInput,
+      )
+
       // Flow control state
       let written = 0
       let pending = 0
@@ -128,6 +136,7 @@ export function TerminalView() {
       term.focus()
 
       return () => {
+        cleanupTouch()
         unsubOutput()
         unsubStatus()
         resizeObserver.disconnect()
@@ -154,7 +163,7 @@ export function TerminalView() {
     <div
       ref={containerRef}
       className="h-full w-full"
-      style={{ padding: 0 }}
+      style={{ touchAction: "none", userSelect: "none", padding: 0 }}
     />
   )
 }
