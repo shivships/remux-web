@@ -122,6 +122,7 @@ export function TerminalView() {
           })
           if (!paused && pending > HIGH_WATER) {
             paused = true
+            written = 0
             connection.sendFlowPause()
           }
         } else {
@@ -157,9 +158,14 @@ export function TerminalView() {
       const resizeObserver = new ResizeObserver(() => {
         clearTimeout(fitTimer)
         fitTimer = setTimeout(() => {
-          fitAddon.fit()
+          // Scroll to bottom BEFORE fit. During resize, xterm adjusts
+          // ybase and ydisp by the same amount, so if they're equal
+          // going in (at bottom), they stay equal coming out. This means
+          // Viewport.queueSync() captures ydisp at the bottom, and the
+          // deferred sync preserves it — no fighting with xterm's internals.
           term.scrollToBottom()
-        }, 150)
+          fitAddon.fit()
+        }, 350)
       })
       resizeObserver.observe(container)
 
