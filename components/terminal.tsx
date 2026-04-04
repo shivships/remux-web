@@ -69,8 +69,10 @@ export function TerminalView() {
 
       term.open(container)
 
-      // On mobile, fully disable xterm's textarea so the keyboard
-      // is controlled exclusively by our toolbar's hidden input.
+      // On mobile, prevent xterm's textarea from triggering the keyboard.
+      // Keyboard is controlled exclusively by the toolbar's hidden input.
+      // Only set inputmode — don't reposition or restyle, as xterm relies
+      // on the textarea's position for internal layout calculations.
       const isMobile = window.matchMedia("(max-width: 768px)").matches
       if (isMobile) {
         const textarea = container.querySelector(
@@ -78,11 +80,6 @@ export function TerminalView() {
         ) as HTMLTextAreaElement | null
         if (textarea) {
           textarea.setAttribute("inputmode", "none")
-          textarea.setAttribute("readonly", "true")
-          textarea.style.opacity = "0"
-          textarea.style.pointerEvents = "none"
-          textarea.style.position = "fixed"
-          textarea.style.top = "-9999px"
         }
       }
 
@@ -133,12 +130,14 @@ export function TerminalView() {
       })
 
       // Connection status changes
+      let hasConnected = false
       const unsubStatus = connection.onStatusChange((status) => {
-        if (status === "disconnected") {
-          term.write("\r\n\x1b[31m[Connection closed]\x1b[0m\r\n")
-        } else if (status === "error") {
-          term.write("\r\n\x1b[31m[Connection error]\x1b[0m\r\n")
+        if (status === "reconnecting") {
+          term.write("\r\n\x1b[33m[Reconnecting...]\x1b[0m\r\n")
+        } else if (status === "connected" && hasConnected) {
+          term.write("\r\n\x1b[32m[Reconnected]\x1b[0m\r\n")
         }
+        if (status === "connected") hasConnected = true
       })
 
       // Terminal input -> server
@@ -151,14 +150,23 @@ export function TerminalView() {
         connection.sendTerminalResize(cols, rows)
       })
 
+      // Debounce fit to avoid resize storms during keyboard animation.
+      // A single fit after the resize settles avoids rapid SIGWINCH
+      // signals that can cause the shell to redraw and reset scroll.
+      let fitTimer: ReturnType<typeof setTimeout> | undefined
       const resizeObserver = new ResizeObserver(() => {
-        fitAddon.fit()
+        clearTimeout(fitTimer)
+        fitTimer = setTimeout(() => {
+          fitAddon.fit()
+          term.scrollToBottom()
+        }, 150)
       })
       resizeObserver.observe(container)
 
       term.focus()
 
       return () => {
+        clearTimeout(fitTimer)
         cleanupTouch()
         unsubOutput()
         unsubStatus()

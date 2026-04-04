@@ -1,7 +1,16 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { Keyboard, KeyboardOff } from "lucide-react"
+import {
+  ChevronUp,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CornerDownLeft,
+  ClipboardPaste,
+  Keyboard,
+  KeyboardOff,
+} from "lucide-react"
 import { useDevcast } from "@/components/devcast-provider"
 
 const textEncoder = new TextEncoder()
@@ -28,13 +37,16 @@ function Keycap({
 
   return (
     <kbd
-      onPointerDown={() => setPressed(true)}
+      onPointerDown={(e) => {
+        e.preventDefault()
+        setPressed(true)
+      }}
       onPointerUp={() => {
         setPressed(false)
         onTap()
       }}
       onPointerLeave={() => setPressed(false)}
-      className={`flex h-7 min-w-7 select-none items-center justify-center rounded-[3px] px-2 text-xs ${className ?? ""}`}
+      className={`flex h-10 min-w-10 select-none items-center justify-center rounded-[4px] px-3 text-sm ${className ?? ""}`}
       style={{
         background: active
           ? "linear-gradient(-26.5deg, rgb(58, 59, 63) 0%, rgb(78, 79, 83) 100%)"
@@ -61,7 +73,6 @@ export function ToolbarMobile() {
   const [ctrlActive, setCtrlActive] = useState(false)
   const [keyboardOpen, setKeyboardOpen] = useState(false)
   const ctrlActiveRef = useRef(ctrlActive)
-  const inputRef = useRef<HTMLInputElement>(null)
   ctrlActiveRef.current = ctrlActive
 
   const send = useCallback(
@@ -75,98 +86,63 @@ export function ToolbarMobile() {
     [connection],
   )
 
-  // Forward keystrokes from our hidden input to the terminal
+  // Intercept next keystroke when Ctrl is active
   useEffect(() => {
-    const input = inputRef.current
-    if (!input) return
+    if (!ctrlActive) return
 
-    const onInput = (e: Event) => {
-      const ie = e as InputEvent
-      if (ie.data) {
-        if (ctrlActiveRef.current) {
-          const byte = ctrlByte(ie.data)
-          if (byte !== null) {
-            connection.sendTerminalInput(new Uint8Array([byte]))
-            setCtrlActive(false)
-          }
-        } else {
-          connection.sendTerminalInput(textEncoder.encode(ie.data))
-        }
-      }
-      // Always clear so the next keystroke fires a fresh input event
-      input.value = ""
-    }
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      // Ctrl intercept for non-printable keys handled by the capture listener,
-      // but handle special keys here
-      switch (e.key) {
-        case "Backspace":
-          e.preventDefault()
-          send([0x7f])
-          break
-        case "Enter":
-          e.preventDefault()
-          send("\r")
-          break
-        case "Escape":
-          e.preventDefault()
-          send("\x1b")
-          break
-        case "Tab":
-          e.preventDefault()
-          send("\t")
-          break
-        case "ArrowUp":
-          e.preventDefault()
-          send(ctrlActiveRef.current ? "\x1b[1;5A" : "\x1b[A")
-          if (ctrlActiveRef.current) setCtrlActive(false)
-          break
-        case "ArrowDown":
-          e.preventDefault()
-          send(ctrlActiveRef.current ? "\x1b[1;5B" : "\x1b[B")
-          if (ctrlActiveRef.current) setCtrlActive(false)
-          break
-        case "ArrowLeft":
-          e.preventDefault()
-          send(ctrlActiveRef.current ? "\x1b[1;5D" : "\x1b[D")
-          if (ctrlActiveRef.current) setCtrlActive(false)
-          break
-        case "ArrowRight":
-          e.preventDefault()
-          send(ctrlActiveRef.current ? "\x1b[1;5C" : "\x1b[C")
-          if (ctrlActiveRef.current) setCtrlActive(false)
-          break
+    const handler = (e: KeyboardEvent) => {
+      const byte = ctrlByte(e.key)
+      if (byte !== null) {
+        e.preventDefault()
+        e.stopPropagation()
+        connection.sendTerminalInput(new Uint8Array([byte]))
+        setCtrlActive(false)
       }
     }
 
-    input.addEventListener("input", onInput)
-    input.addEventListener("keydown", onKeyDown)
-    return () => {
-      input.removeEventListener("input", onInput)
-      input.removeEventListener("keydown", onKeyDown)
-    }
-  }, [connection, send])
+    document.addEventListener("keydown", handler, true)
+    return () => document.removeEventListener("keydown", handler, true)
+  }, [ctrlActive, connection])
 
-  // Sync keyboardOpen state if the input loses focus externally
+  // Sync keyboard state when xterm's textarea loses focus by any means
+  // (our button, iOS native dismiss, tap elsewhere, etc.).
+  // Uses document-level focusout so we don't need to find the textarea at mount time.
   useEffect(() => {
-    const input = inputRef.current
-    if (!input) return
+    const onFocusOut = (e: FocusEvent) => {
+      const target = e.target as Element | null
+      if (target?.classList?.contains("xterm-helper-textarea")) {
+        setKeyboardOpen(false)
+        ;(target as HTMLTextAreaElement).setAttribute("inputmode", "none")
+      }
+    }
 
-    const onBlur = () => setKeyboardOpen(false)
-    input.addEventListener("blur", onBlur)
-    return () => input.removeEventListener("blur", onBlur)
+    document.addEventListener("focusout", onFocusOut)
+    return () => document.removeEventListener("focusout", onFocusOut)
   }, [])
 
   const toggleKeyboard = useCallback(() => {
-    const input = inputRef.current
-    if (!input) return
+    const textarea = document.querySelector(
+      ".xterm-helper-textarea",
+    ) as HTMLTextAreaElement | null
+    if (!textarea) return
 
     if (keyboardOpen) {
-      input.blur()
+      textarea.setAttribute("inputmode", "none")
+      textarea.blur()
       setKeyboardOpen(false)
     } else {
-      input.focus()
+      textarea.removeAttribute("inputmode")
+      textarea.setAttribute("autocomplete", "off")
+      textarea.setAttribute("autocorrect", "off")
+      textarea.setAttribute("autocapitalize", "off")
+      textarea.setAttribute("spellcheck", "false")
+      // Temporarily move textarea far above viewport so iOS Safari
+      // can't scroll to it, then focus, then reset position.
+      textarea.style.transform = "translateY(-9999px)"
+      textarea.focus({ preventScroll: true })
+      setTimeout(() => {
+        textarea.style.transform = ""
+      }, 0)
       setKeyboardOpen(true)
     }
   }, [keyboardOpen])
@@ -183,55 +159,61 @@ export function ToolbarMobile() {
     [send],
   )
 
-  return (
-    <div className="relative flex items-center justify-between bg-background px-3 py-2 md:hidden">
-      {/* Hidden input for iOS keyboard capture — must be in-viewport for iOS to keep keyboard open */}
-      <input
-        ref={inputRef}
-        type="text"
-        autoComplete="off"
-        autoCorrect="off"
-        autoCapitalize="off"
-        spellCheck={false}
-        enterKeyHint="send"
-        aria-hidden
-        tabIndex={-1}
-        className="absolute left-0 top-0 h-1 w-1 opacity-0"
-      />
+  const handlePaste = useCallback(async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      if (text) send(text)
+    } catch {
+      // clipboard permission denied
+    }
+  }, [send])
 
-      <div className="flex items-center gap-1.5">
+  return (
+    <div className="flex items-center justify-between bg-background px-3 py-2 md:hidden">
+      <div
+        className="flex min-w-0 items-center gap-1.5 overflow-x-auto"
+        style={{
+          maskImage: "linear-gradient(to right, black calc(100% - 24px), transparent)",
+          WebkitMaskImage: "linear-gradient(to right, black calc(100% - 24px), transparent)",
+        }}
+      >
         <Keycap onTap={() => send("\x1b")}>Esc</Keycap>
         <Keycap onTap={() => send("\t")}>Tab</Keycap>
         <Keycap
           onTap={() => setCtrlActive((v) => !v)}
           active={ctrlActive}
         >
-          Ctrl
+          Ctr
         </Keycap>
-        <Keycap onTap={() => handleArrow("A")}>↑</Keycap>
-        <Keycap onTap={() => handleArrow("B")}>↓</Keycap>
-        <Keycap onTap={() => handleArrow("D")}>←</Keycap>
-        <Keycap onTap={() => handleArrow("C")}>→</Keycap>
+        <Keycap onTap={() => handleArrow("A")}><ChevronUp size={18} /></Keycap>
+        <Keycap onTap={() => handleArrow("B")}><ChevronDown size={18} /></Keycap>
+        <Keycap onTap={() => handleArrow("D")}><ChevronLeft size={18} /></Keycap>
+        <Keycap onTap={() => handleArrow("C")}><ChevronRight size={18} /></Keycap>
+        <Keycap onTap={() => send("\r")}><CornerDownLeft size={18} /></Keycap>
+        <div className="shrink-0 w-6" aria-hidden />
       </div>
-      {/* Use onTouchEnd with preventDefault to stop iOS from stealing focus */}
-      <kbd
-        onTouchEnd={(e) => {
-          e.preventDefault()
-          toggleKeyboard()
-        }}
-        className="flex h-7 min-w-7 select-none items-center justify-center rounded-[3px] px-2 text-xs"
-        style={{
-          background: KEY_GRADIENT,
-          boxShadow: KEY_SHADOW,
-          color: "rgb(138, 139, 143)",
-        }}
-      >
-        {keyboardOpen ? (
-          <KeyboardOff size={14} />
-        ) : (
-          <Keyboard size={14} />
-        )}
-      </kbd>
+      <div className="flex shrink-0 items-center gap-1.5 pl-1.5">
+        <Keycap onTap={handlePaste}><ClipboardPaste size={18} /></Keycap>
+        <kbd
+          onPointerDown={(e) => e.preventDefault()}
+          onTouchEnd={(e) => {
+            e.preventDefault()
+            toggleKeyboard()
+          }}
+          className="flex h-10 min-w-10 select-none items-center justify-center rounded-[4px] px-3 text-sm"
+          style={{
+            background: KEY_GRADIENT,
+            boxShadow: KEY_SHADOW,
+            color: "rgb(138, 139, 143)",
+          }}
+        >
+          {keyboardOpen ? (
+            <KeyboardOff size={18} />
+          ) : (
+            <Keyboard size={18} />
+          )}
+        </kbd>
+      </div>
     </div>
   )
 }

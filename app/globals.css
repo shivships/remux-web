@@ -91,6 +91,21 @@
     --chart-5: oklch(0.269 0 0);
 }
 
+/* Prevent iOS Safari from scrolling to xterm's offscreen textarea on focus.
+   The default left: -9999em triggers scroll-into-view. clip-path hides it
+   while keeping it in-bounds. overflow: hidden on helpers is belt-and-suspenders. */
+@media (max-width: 768px) {
+  .xterm .xterm-helper-textarea {
+    left: 0 !important;
+    top: 0 !important;
+    clip: rect(0, 0, 0, 0) !important;
+    clip-path: inset(50%) !important;
+  }
+  .xterm .xterm-helpers {
+    overflow: hidden !important;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
