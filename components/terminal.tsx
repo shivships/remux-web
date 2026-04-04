@@ -141,6 +141,16 @@ export function TerminalView() {
         if (status === "connected") hasConnected = true
       })
 
+      // Intercept Shift+Enter and send CSI u sequence for Kitty keyboard
+      // protocol. Claude Code uses this to distinguish newline from submit.
+      term.attachCustomKeyEventHandler((ev: KeyboardEvent) => {
+        if (ev.type === "keydown" && ev.key === "Enter" && ev.shiftKey) {
+          connection.sendTerminalInput(textEncoder.encode("\x1b[13;2u"))
+          return false
+        }
+        return true
+      })
+
       // Terminal input -> server
       term.onData((data) => {
         connection.sendTerminalInput(textEncoder.encode(data))

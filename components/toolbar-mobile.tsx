@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ArrowBigUp,
   CornerDownLeft,
   ClipboardPaste,
   Keyboard,
@@ -189,7 +190,16 @@ export function ToolbarMobile() {
         <Keycap onTap={() => handleArrow("B")}><ChevronDown size={18} /></Keycap>
         <Keycap onTap={() => handleArrow("D")}><ChevronLeft size={18} /></Keycap>
         <Keycap onTap={() => handleArrow("C")}><ChevronRight size={18} /></Keycap>
-        <Keycap onTap={() => send("\r")}><CornerDownLeft size={18} /></Keycap>
+        <Keycap onTap={() => send(keyboardOpen ? "\x1b[13;2u" : "\r")}>
+          {keyboardOpen ? (
+            <span className="flex items-center gap-0.5">
+              <ArrowBigUp size={14} />
+              <CornerDownLeft size={14} />
+            </span>
+          ) : (
+            <CornerDownLeft size={18} />
+          )}
+        </Keycap>
         <div className="shrink-0 w-6" aria-hidden />
       </div>
       <div className="flex shrink-0 items-center gap-1.5 pl-1.5">
