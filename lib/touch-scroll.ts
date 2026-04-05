@@ -123,9 +123,8 @@ export function setupTouchScroll(
     const elapsed = Date.now() - touchStartTime
     const distance = Math.abs(endY - touchStartY)
 
-    // Tap detection — focus terminal to open keyboard
+    // Tap — no-op; keyboard is opened exclusively via the toolbar button
     if (elapsed < TAP_MAX_DURATION && distance < TAP_MAX_DISTANCE) {
-      term.focus()
       return
     }
 

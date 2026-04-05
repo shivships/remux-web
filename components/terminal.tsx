@@ -179,7 +179,7 @@ export function TerminalView() {
       })
       resizeObserver.observe(container)
 
-      term.focus()
+      if (!isMobile) term.focus()
 
       return () => {
         clearTimeout(fitTimer)
