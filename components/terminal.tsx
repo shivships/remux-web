@@ -52,7 +52,7 @@ export function TerminalView() {
         allowProposedApi: true,
         scrollback: 5000,
         theme: {
-          background: "#1a1a1a",
+          background: "#111111",
           foreground: "#e0e0e0",
           cursor: "#e0e0e0",
         },

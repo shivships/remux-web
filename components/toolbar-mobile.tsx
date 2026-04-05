@@ -16,25 +16,67 @@ import { useDevcast } from "@/components/devcast-provider"
 
 const textEncoder = new TextEncoder()
 
-const KEY_SHADOW =
-  "inset 0 -2px 0 0 rgb(28, 29, 33), inset 0 0 1px 1px rgb(48, 49, 53), 0 2px 2px 0 rgba(3, 4, 9, 0.3)"
-const KEY_PRESSED_SHADOW =
-  "inset 0 -2px 0 0 rgb(28, 29, 33), inset 0 0 1px 1px rgb(48, 49, 53), 0 1px 1px 0 rgba(3, 4, 9, 0.5)"
-const KEY_GRADIENT =
-  "linear-gradient(-26.5deg, rgb(38, 39, 43) 0%, rgb(58, 59, 63) 100%)"
+// Sculpted keycap: lighter top face, darker side walls, thick bottom ledge
+const KEY_SHADOW = [
+  "inset 0 1px 0 0 rgba(255,255,255,0.07)",   // top edge highlight
+  "inset 0 -1px 1px 0 rgba(0,0,0,0.15)",      // concave bottom of top face
+  "-1px 0 0 0 #1a1a1a",                        // left wall
+  "1px 0 0 0 #1a1a1a",                         // right wall
+  "0 3px 0 0 #141414",                         // bottom ledge (depth)
+  "0 4px 4px 0 rgba(0,0,0,0.35)",              // drop shadow
+].join(", ")
+const KEY_PRESSED_SHADOW = [
+  "inset 0 1px 0 0 rgba(255,255,255,0.05)",
+  "inset 0 -1px 1px 0 rgba(0,0,0,0.1)",
+  "-1px 0 0 0 #1a1a1a",
+  "1px 0 0 0 #1a1a1a",
+  "0 1px 0 0 #141414",                         // ledge compresses
+  "0 2px 2px 0 rgba(0,0,0,0.25)",
+].join(", ")
+const KEY_GRADIENT = "linear-gradient(180deg, #383838 0%, #2c2c2c 100%)"
+
+// Accent keycap (Esc) — deep burnt orange, same sculpted shape
+const ACCENT_GRADIENT = "linear-gradient(180deg, #7a3626 0%, #632c1e 100%)"
+const ACCENT_SHADOW = [
+  "inset 0 1px 0 0 rgba(255,160,120,0.1)",
+  "inset 0 -1px 1px 0 rgba(0,0,0,0.2)",
+  "-1px 0 0 0 #3d1a10",
+  "1px 0 0 0 #3d1a10",
+  "0 3px 0 0 #2a120b",
+  "0 4px 4px 0 rgba(0,0,0,0.35)",
+].join(", ")
+const ACCENT_PRESSED_SHADOW = [
+  "inset 0 1px 0 0 rgba(255,160,120,0.07)",
+  "inset 0 -1px 1px 0 rgba(0,0,0,0.15)",
+  "-1px 0 0 0 #3d1a10",
+  "1px 0 0 0 #3d1a10",
+  "0 1px 0 0 #2a120b",
+  "0 2px 2px 0 rgba(0,0,0,0.25)",
+].join(", ")
 
 function Keycap({
   children,
   onTap,
   active,
+  accent,
   className,
 }: {
   children: React.ReactNode
   onTap: () => void
   active?: boolean
+  accent?: boolean
   className?: string
 }) {
   const [pressed, setPressed] = useState(false)
+
+  const bg = accent
+    ? ACCENT_GRADIENT
+    : active
+      ? "linear-gradient(180deg, #484848 0%, #3c3c3c 100%)"
+      : KEY_GRADIENT
+  const shadow = accent
+    ? (pressed ? ACCENT_PRESSED_SHADOW : ACCENT_SHADOW)
+    : (pressed ? KEY_PRESSED_SHADOW : KEY_SHADOW)
 
   return (
     <kbd
@@ -47,14 +89,12 @@ function Keycap({
         onTap()
       }}
       onPointerLeave={() => setPressed(false)}
-      className={`flex h-10 min-w-10 select-none items-center justify-center rounded-[4px] px-3 text-sm ${className ?? ""}`}
+      className={`flex h-10 min-w-10 select-none items-center justify-center rounded-[6px] px-3 text-sm ${className ?? ""}`}
       style={{
-        background: active
-          ? "linear-gradient(-26.5deg, rgb(58, 59, 63) 0%, rgb(78, 79, 83) 100%)"
-          : KEY_GRADIENT,
-        boxShadow: pressed ? KEY_PRESSED_SHADOW : KEY_SHADOW,
-        transform: pressed ? "translate3d(0, 1px, 0)" : undefined,
-        color: active ? "rgb(200, 200, 210)" : "rgb(138, 139, 143)",
+        background: bg,
+        boxShadow: shadow,
+        transform: pressed ? "translate3d(0, 2px, 0)" : undefined,
+        color: active ? "rgb(210, 210, 220)" : "rgb(150, 150, 155)",
       }}
     >
       {children}
@@ -170,15 +210,12 @@ export function ToolbarMobile() {
   }, [send])
 
   return (
-    <div className="flex items-center justify-between bg-background px-3 py-2 md:hidden">
+    <div className="flex items-center justify-between bg-background px-3 pt-0 pb-2 md:hidden">
       <div
-        className="flex min-w-0 items-center gap-1.5 overflow-x-auto"
-        style={{
-          maskImage: "linear-gradient(to right, black calc(100% - 24px), transparent)",
-          WebkitMaskImage: "linear-gradient(to right, black calc(100% - 24px), transparent)",
-        }}
+        className="flex min-w-0 items-center gap-1.5 overflow-x-auto pb-1"
+
       >
-        <Keycap onTap={() => send("\x1b")}>Esc</Keycap>
+        <Keycap onTap={() => send("\x1b")} accent>Esc</Keycap>
         <Keycap onTap={() => send("\t")}>Tab</Keycap>
         <Keycap
           onTap={() => setCtrlActive((v) => !v)}
@@ -200,9 +237,10 @@ export function ToolbarMobile() {
             <CornerDownLeft size={18} />
           )}
         </Keycap>
+        <Keycap onTap={() => send("\x03")}>^C</Keycap>
         <div className="shrink-0 w-6" aria-hidden />
       </div>
-      <div className="flex shrink-0 items-center gap-1.5 pl-1.5">
+      <div className="flex shrink-0 items-center gap-1.5 pl-1.5 pb-1">
         <Keycap onTap={handlePaste}><ClipboardPaste size={18} /></Keycap>
         <kbd
           onPointerDown={(e) => e.preventDefault()}

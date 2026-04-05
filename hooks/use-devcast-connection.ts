@@ -65,6 +65,18 @@ export function useDevcastConnection(wsUrl: string): DevcastConnection {
 
     function connect() {
       if (destroyed) return
+      // Detach handlers from old socket so a stale onclose can't
+      // clear the new connection's pingInterval or null wsRef.
+      if (ws) {
+        ws.onopen = null
+        ws.onmessage = null
+        ws.onclose = null
+        ws.onerror = null
+      }
+      if (pingInterval) {
+        clearInterval(pingInterval)
+        pingInterval = null
+      }
       ws = new WebSocket(wsUrl)
       ws.binaryType = "arraybuffer"
       wsRef.current = ws

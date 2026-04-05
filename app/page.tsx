@@ -40,7 +40,7 @@ function TerminalPage() {
 
   if (!wsUrl) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-[#1a1a1a] text-neutral-400">
+      <div className="flex h-dvh items-center justify-center bg-background text-neutral-400">
         <p>No connection URL. Use ?port= or ?tunnel= to connect.</p>
       </div>
     )
@@ -64,7 +64,7 @@ function TerminalPage() {
 export default function Page() {
   return (
     <Suspense>
-      <div className="h-dvh w-full overflow-hidden bg-[#1a1a1a]">
+      <div className="h-dvh w-full overflow-hidden bg-background">
         <TerminalPage />
       </div>
     </Suspense>
