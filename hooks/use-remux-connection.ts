@@ -18,7 +18,7 @@ export type ConnectionStatus =
 type TerminalOutputCallback = (data: Uint8Array) => void
 type StatusCallback = (status: ConnectionStatus) => void
 
-export interface DevcastConnection {
+export interface RemuxConnection {
   status: ConnectionStatus
   sendTerminalInput: (data: Uint8Array) => void
   sendTerminalResize: (cols: number, rows: number) => void
@@ -42,7 +42,7 @@ function sendBinary(ws: WebSocket, type: number, payload?: Uint8Array) {
   }
 }
 
-export function useDevcastConnection(wsUrl: string): DevcastConnection {
+export function useRemuxConnection(wsUrl: string): RemuxConnection {
   const [status, setStatus] = useState<ConnectionStatus>("connecting")
   const wsRef = useRef<WebSocket | null>(null)
   const lastSize = useRef<{ cols: number; rows: number } | null>(null)

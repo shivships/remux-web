@@ -13,7 +13,7 @@ const fontMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Devcast",
+  title: "Remux",
 }
 
 export const viewport: Viewport = {

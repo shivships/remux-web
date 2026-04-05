@@ -8,7 +8,7 @@ import { Unicode11Addon } from "@xterm/addon-unicode11"
 import { WebLinksAddon } from "@xterm/addon-web-links"
 import "@xterm/xterm/css/xterm.css"
 
-import { useDevcast } from "@/components/devcast-provider"
+import { useRemux } from "@/components/remux-provider"
 import { setupTouchScroll } from "@/lib/touch-scroll"
 
 const FONT_FAMILY = "'Geist Mono', 'Menlo', 'Courier New', monospace"
@@ -28,7 +28,7 @@ const textEncoder = new TextEncoder()
 
 export function TerminalView() {
   const containerRef = useRef<HTMLDivElement>(null)
-  const connection = useDevcast()
+  const connection = useRemux()
 
   useEffect(() => {
     if (!containerRef.current) return

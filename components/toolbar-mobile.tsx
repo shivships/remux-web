@@ -12,7 +12,7 @@ import {
   Keyboard,
   KeyboardOff,
 } from "lucide-react"
-import { useDevcast } from "@/components/devcast-provider"
+import { useRemux } from "@/components/remux-provider"
 
 const textEncoder = new TextEncoder()
 
@@ -110,11 +110,19 @@ function ctrlByte(key: string): number | null {
 }
 
 export function ToolbarMobile() {
-  const connection = useDevcast()
+  const connection = useRemux()
   const [ctrlActive, setCtrlActive] = useState(false)
+  const [altActive, setAltActive] = useState(false)
   const [keyboardOpen, setKeyboardOpen] = useState(false)
   const ctrlActiveRef = useRef(ctrlActive)
   ctrlActiveRef.current = ctrlActive
+  const altActiveRef = useRef(altActive)
+  altActiveRef.current = altActive
+
+  const resetModifiers = useCallback(() => {
+    setCtrlActive(false)
+    setAltActive(false)
+  }, [])
 
   const send = useCallback(
     (data: string | number[]) => {
@@ -127,23 +135,40 @@ export function ToolbarMobile() {
     [connection],
   )
 
-  // Intercept next keystroke when Ctrl is active
+  // Intercept next keystroke when a modifier is active
   useEffect(() => {
-    if (!ctrlActive) return
+    if (!ctrlActive && !altActive) return
 
     const handler = (e: KeyboardEvent) => {
-      const byte = ctrlByte(e.key)
-      if (byte !== null) {
-        e.preventDefault()
-        e.stopPropagation()
-        connection.sendTerminalInput(new Uint8Array([byte]))
-        setCtrlActive(false)
+      if (e.key === "Control" || e.key === "Alt" || e.key === "Shift" || e.key === "Meta") return
+      if (e.repeat) return
+
+      e.preventDefault()
+      e.stopPropagation()
+
+      const bytes: number[] = []
+
+      if (ctrlActive) {
+        const cb = ctrlByte(e.key)
+        if (cb !== null) {
+          if (altActive) bytes.push(0x1b)
+          bytes.push(cb)
+        } else if (altActive && e.key.length === 1) {
+          bytes.push(0x1b, e.key.charCodeAt(0))
+        }
+      } else if (altActive && e.key.length === 1) {
+        bytes.push(0x1b, e.key.charCodeAt(0))
       }
+
+      if (bytes.length > 0) {
+        connection.sendTerminalInput(new Uint8Array(bytes))
+      }
+      resetModifiers()
     }
 
     document.addEventListener("keydown", handler, true)
     return () => document.removeEventListener("keydown", handler, true)
-  }, [ctrlActive, connection])
+  }, [ctrlActive, altActive, connection, resetModifiers])
 
   // Sync keyboard state when xterm's textarea loses focus by any means
   // (our button, iOS native dismiss, tap elsewhere, etc.).
@@ -190,14 +215,15 @@ export function ToolbarMobile() {
 
   const handleArrow = useCallback(
     (code: string) => {
-      if (ctrlActiveRef.current) {
-        send(`\x1b[1;5${code}`)
-        setCtrlActive(false)
+      const mod = (ctrlActiveRef.current ? 4 : 0) + (altActiveRef.current ? 2 : 0)
+      if (mod > 0) {
+        send(`\x1b[1;${mod + 1}${code}`)
+        resetModifiers()
       } else {
         send(`\x1b[${code}`)
       }
     },
-    [send],
+    [send, resetModifiers],
   )
 
   const handlePaste = useCallback(async () => {
@@ -207,7 +233,8 @@ export function ToolbarMobile() {
     } catch {
       // clipboard permission denied
     }
-  }, [send])
+    resetModifiers()
+  }, [send, resetModifiers])
 
   return (
     <div className="flex items-center justify-between bg-background px-3 pt-0 pb-2 md:hidden">
@@ -215,19 +242,25 @@ export function ToolbarMobile() {
         className="flex min-w-0 items-center gap-1.5 overflow-x-auto pb-1"
 
       >
-        <Keycap onTap={() => send("\x1b")} accent>Esc</Keycap>
-        <Keycap onTap={() => send("\t")}>Tab</Keycap>
+        <Keycap onTap={() => { send("\x1b"); resetModifiers() }} accent>Esc</Keycap>
+        <Keycap onTap={() => { send("\t"); resetModifiers() }}>Tab</Keycap>
         <Keycap
           onTap={() => setCtrlActive((v) => !v)}
           active={ctrlActive}
         >
           Ctr
         </Keycap>
+        <Keycap
+          onTap={() => setAltActive((v) => !v)}
+          active={altActive}
+        >
+          Alt
+        </Keycap>
         <Keycap onTap={() => handleArrow("A")}><ChevronUp size={18} /></Keycap>
         <Keycap onTap={() => handleArrow("B")}><ChevronDown size={18} /></Keycap>
         <Keycap onTap={() => handleArrow("D")}><ChevronLeft size={18} /></Keycap>
         <Keycap onTap={() => handleArrow("C")}><ChevronRight size={18} /></Keycap>
-        <Keycap onTap={() => send(keyboardOpen ? "\x1b[13;2u" : "\r")}>
+        <Keycap onTap={() => { send(keyboardOpen ? "\x1b[13;2u" : "\r"); resetModifiers() }}>
           {keyboardOpen ? (
             <span className="flex items-center gap-0.5">
               <ArrowBigUp size={14} />
@@ -237,7 +270,7 @@ export function ToolbarMobile() {
             <CornerDownLeft size={18} />
           )}
         </Keycap>
-        <Keycap onTap={() => send("\x03")}>^C</Keycap>
+        <Keycap onTap={() => { send("\x03"); resetModifiers() }}>^C</Keycap>
         <div className="shrink-0 w-6" aria-hidden />
       </div>
       <div className="flex shrink-0 items-center gap-1.5 pl-1.5 pb-1">
