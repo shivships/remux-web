@@ -210,7 +210,7 @@ export function TerminalView() {
     <div
       ref={containerRef}
       className="h-full w-full"
-      style={{ touchAction: "none", userSelect: "none", padding: 0 }}
+      style={{ touchAction: "none", userSelect: "none", padding: 0, background: "#111111" }}
     />
   )
 }

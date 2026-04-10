@@ -281,7 +281,7 @@ export function ToolbarMobile() {
             e.preventDefault()
             toggleKeyboard()
           }}
-          className="flex h-10 min-w-10 select-none items-center justify-center rounded-[4px] px-3 text-sm"
+          className="flex h-10 min-w-10 select-none items-center justify-center rounded-[6px] px-3 text-sm"
           style={{
             background: KEY_GRADIENT,
             boxShadow: KEY_SHADOW,
