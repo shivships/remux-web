@@ -27,7 +27,8 @@ export default function SlugPage() {
     }
   }, [])
 
-  const wsUrl = `wss://${slug}.trycloudflare.com`
+  const tunnel = slug.replace(/^cw-/, "")
+  const wsUrl = `wss://${tunnel}.trycloudflare.com`
 
   return (
     <RemuxProvider wsUrl={wsUrl}>
